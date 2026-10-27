@@ -7,7 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useConfigStore } from '@/store/configStore';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { getProduct, listProducts, listOptionGroups, saveConfiguration } from '@/services/configura3d';
+import { getPublicProductBySlug, saveConfiguration } from '@/services/configura3d';
 import { ProductViewer } from '@/components/viewer/ProductViewer';
 import { ViewerControls } from '@/components/viewer/ViewerControls';
 import { ViewerActionsProvider } from '@/components/viewer/ViewerActions';
@@ -52,17 +52,11 @@ export default function Configurator() {
       setLoading(true);
       setError(null);
       try {
-        let prod;
-        if (slug) {
-          const listed = await listProducts({ search: slug, pageSize: 50 });
-          const items = (listed && listed.items) || [];
-          prod = items.find((p: any) => p.slug === slug) || items[0];
-        } else {
-          prod = await getProduct('organizador-de-mesa-demo');
-        }
+        const result = await getPublicProductBySlug(slug || 'organizador-de-mesa-demo');
+        const prod = result.product;
         if (!prod || cancelled) return;
         setProduct(prod);
-        const groups = await listOptionGroups(prod.id);
+        const groups = result.optionGroups || [];
         setOptionGroups(groups);
         const defaults: Record<string, string[]> = {};
         groups.forEach((g: any) => {
