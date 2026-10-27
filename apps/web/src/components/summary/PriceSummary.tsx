@@ -1,10 +1,5 @@
-/**
- * PriceSummary - Resumo da configuração e preço.
- * O preço exibido é uma prévia do frontend; o valor definitivo é calculado
- * e validado pelo backend ao salvar/orçar.
- */
-
 import React from 'react';
+import { BadgeCheck, CircleAlert, Package, Sparkles } from 'lucide-react';
 import { useConfigStore } from '@/store/configStore';
 import { formatBRL } from '@/lib/format';
 import { calculatePrice } from '@/services/configura3d';
@@ -27,49 +22,31 @@ export function PriceSummary() {
     }
   };
 
-  // Recalcula quando produto/seleções/quantidade mudam
-  React.useEffect(() => {
-    recalculate();
-  }, [product, JSON.stringify(selections), quantity]);
-
+  React.useEffect(() => { recalculate(); }, [product, JSON.stringify(selections), quantity]);
   if (!product) return null;
 
   const base = formatBRL(product.basePriceCents);
-  const total = price ? formatBRL(price.totalCents) : '—';
+  const total = price ? formatBRL(price.totalCents) : 'Calculando…';
+  const selectedCount = Object.values(selections).reduce((sum, values) => sum + values.length, 0);
 
   return (
-    <div className="border-t border-slate-200 p-4 bg-white/80 backdrop-blur backdrop-saturate-150">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-slate-500 uppercase">Resumo da configuração</span>
-        {price && price.warnings.length > 0 && (
-          <span className="text-[10px] flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
-            ⚠ {price.warnings.length} aviso(s)
-          </span>
-        )}
+    <section className="border-t border-slate-100 bg-white p-5 sm:p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <div><div className="eyebrow mb-1">SEU RESUMO</div><h3 className="font-extrabold text-slate-900">Estimativa de preço</h3></div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><Sparkles size={18} /></div>
       </div>
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-slate-500">Produto</span>
-          <span className="font-medium">{base}</span>
-        </div>
-        {price && price.additionalCents > 0 && (
-          <div className="flex justify-between">
-            <span className="text-slate-500">Adicionais</span>
-            <span className="font-medium">+{formatBRL(price.additionalCents)}</span>
-          </div>
-        )}
-        <div className="flex justify-between">
-          <span className="text-slate-500">Quantidade</span>
-          <span className="font-medium">{quantity}x</span>
-        </div>
-        <div className="flex justify-between border-t border-slate-100 pt-2">
-          <span className="text-slate-500">Total estimado</span>
-          <span className="font-bold text-brand-900">{total}</span>
-        </div>
+      <div className="mb-4 rounded-2xl bg-slate-50 p-4">
+        <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm"><Package size={18} /></div><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold text-slate-800">{product.name}</div><div className="mt-0.5 text-xs text-slate-500">{selectedCount} personalização(ões) · {quantity} unidade(s)</div></div></div>
       </div>
-      <p className="text-[10px] text-slate-400 mt-2">
-        Previsão do frontend. O valor definitivo é validado pelo backend ao salvar ou gerar orçamento.
-      </p>
-    </div>
+      <div className="space-y-3 text-sm">
+        <div className="flex items-center justify-between"><span className="text-slate-500">Preço base</span><span className="font-semibold text-slate-700">{base}</span></div>
+        {price && price.additionalCents > 0 && <div className="flex items-center justify-between"><span className="text-slate-500">Personalizações</span><span className="font-semibold text-slate-700">+{formatBRL(price.additionalCents)}</span></div>}
+        <div className="flex items-center justify-between"><span className="text-slate-500">Quantidade</span><span className="font-semibold text-slate-700">{quantity}x</span></div>
+      </div>
+      <div className="my-4 border-t border-dashed border-slate-200" />
+      <div className="flex items-end justify-between gap-3"><div><div className="text-xs font-semibold text-slate-500">Total estimado</div><div className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">{total}</div></div><div className="mb-1 flex items-center gap-1 text-[10px] font-bold text-emerald-700"><BadgeCheck size={14} /> Prévia</div></div>
+      {price && price.warnings.length > 0 && <div className="mt-4 space-y-1 rounded-xl border border-amber-100 bg-amber-50 p-3">{price.warnings.map((w, i) => <p key={i} className="flex gap-2 text-xs leading-5 text-amber-800"><CircleAlert size={14} className="mt-0.5 shrink-0" />{w}</p>)}</div>}
+      <p className="mt-3 text-[10px] leading-4 text-slate-400">O valor final é validado pelo sistema ao salvar a configuração ou solicitar o orçamento.</p>
+    </section>
   );
 }
