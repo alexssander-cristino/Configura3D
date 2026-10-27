@@ -99,7 +99,7 @@ export default function SharedConfig() {
             Novo produto
           </a>
         </div>
-      </div>
+      </section>
       <aside className="w-full shrink-0 overflow-y-auto border-t border-slate-200 bg-white p-5 sm:p-6 lg:w-[390px] lg:border-l lg:border-t-0 xl:w-[420px]">
         <h2 className="text-sm font-semibold text-slate-700 mb-1">Configuração compartilhada</h2>
         <p className="text-xs text-slate-500 mb-4">{product?.name || 'Produto'}</p>
