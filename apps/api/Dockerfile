@@ -1,21 +1,22 @@
 FROM node:22-alpine
 
-# Prisma precisa das bibliotecas OpenSSL disponíveis no Alpine.
+# Dependências nativas necessárias ao Prisma no Alpine.
 RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 
-# Dependências de produção
-COPY package.json ./
-RUN npm install --omit=dev && npm cache clean --force
-
-# Código da aplicação
+# A API usa o workspace compartilhado @configura3d/shared.
+# O contexto de build é a raiz do monorepo.
 COPY . .
 
-# Gera o cliente Prisma
-ENV DATABASE_URL=""
-RUN npx prisma generate
+# Instala os workspaces, compila o pacote compartilhado e a API,
+# gera o cliente Prisma e remove dependências de desenvolvimento.
+RUN npm install \
+    && npm run build --workspace=packages/shared \
+    && npm run build --workspace=apps/api \
+    && npx prisma generate --workspace=apps/api \
+    && npm prune --omit=dev
 
-EXPOSE 3333
+EXPOSE 3334
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --workspace=apps/api && npm run start --workspace=apps/api"]
