@@ -146,7 +146,11 @@ export default function Configurator() {
 
   // URLs iniciadas com "/" apontam para o servidor do frontend, onde os
   // modelos públicos ficam em apps/web/public/models. URLs absolutas são preservadas.
-  const rawModelUrl = product.modelAsset?.fileUrl || '/models/demo-organizador.glb';
+  const configuredModelUrl = product.modelAsset?.fileUrl || '/models/demo-organizador.gltf';
+  // O GLB antigo de demonstração está inválido; usa a versão GLTF válida gerada no projeto.
+  const rawModelUrl = configuredModelUrl.endsWith('/demo-organizador.glb')
+    ? configuredModelUrl.replace(/demo-organizador\.glb$/, 'demo-organizador.gltf')
+    : configuredModelUrl;
   const modelUrl = rawModelUrl.startsWith('/')
     ? `${window.location.origin}${rawModelUrl}`
     : rawModelUrl;
