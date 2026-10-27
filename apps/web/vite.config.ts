@@ -15,7 +15,7 @@ export default defineConfig({
       '/api': {
         // Use IPv4 explicitly: on Windows, localhost may resolve to ::1
         // while Fastify is listening on 0.0.0.0, causing proxy 502 errors.
-        target: 'http://127.0.0.1:3333',
+        target: 'http://127.0.0.1:3334',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api/v1'),
       },
