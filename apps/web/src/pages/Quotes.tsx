@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowDownToLine, Check, Clock3, FileText, Search, Send, X } from 'lucide-react';
 import { listQuotes, updateQuoteStatus } from '@/services/configura3d';
