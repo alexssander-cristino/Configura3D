@@ -56,6 +56,13 @@ export async function listCompanyMembers(companyId: string) {
 // Products
 // ---------------------------------------------------------------------------
 
+export async function getPublicProductBySlug(slug: string) {
+  const { data } = await api.get<{ product: Product; optionGroups: OptionGroup[] }>(
+    `/public/products/${encodeURIComponent(slug)}`,
+  );
+  return data;
+}
+
 export async function listProducts(params?: {
   category?: string; search?: string; isPublished?: string; isArchived?: string;
   page?: number; pageSize?: number;
