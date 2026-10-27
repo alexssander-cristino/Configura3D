@@ -95,7 +95,7 @@ services:
       LOG_LEVEL: info
     ports:
       - "3334:3334"
-    command: ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+    command: ["sh", "-c", "npm run prisma:deploy --workspace=apps/api && npm run start --workspace=apps/api"]
 
   # Frontend web
   web:
