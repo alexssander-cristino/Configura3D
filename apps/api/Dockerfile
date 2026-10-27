@@ -1,5 +1,8 @@
 FROM node:22-alpine
 
+# Prisma precisa das bibliotecas OpenSSL disponíveis no Alpine.
+RUN apk add --no-cache openssl libc6-compat
+
 WORKDIR /app
 
 # Dependências de produção
