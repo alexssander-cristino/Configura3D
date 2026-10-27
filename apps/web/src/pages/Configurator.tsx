@@ -144,7 +144,17 @@ export default function Configurator() {
     </div>
   );
 
-  const modelUrl = product.modelAsset?.fileUrl || '/models/demo-organizador.glb';
+  // URLs iniciadas com "/" apontam para o servidor do frontend, onde os
+  // modelos públicos ficam em apps/web/public/models. URLs absolutas são preservadas.
+  const rawModelUrl = product.modelAsset?.fileUrl || '/models/demo-organizador.glb';
+  const modelUrl = rawModelUrl.startsWith('/')
+    ? `${window.location.origin}${rawModelUrl}`
+    : rawModelUrl;
+
+  const handleViewerError = React.useCallback((err: unknown) => {
+    console.error('[Configura3D] Erro ao carregar modelo 3D:', err);
+    setViewerError(err);
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -155,7 +165,11 @@ export default function Configurator() {
               <OrbitControls makeDefault enablePan={false} />
             </ViewerActionsProvider>
             {viewerError ? null : (
-              <ProductViewer modelUrl={modelUrl} componentMaterials={componentMaterials} />
+              <ProductViewer
+                modelUrl={modelUrl}
+                componentMaterials={componentMaterials}
+                onError={handleViewerError}
+              />
             )}
             <ViewerLoading />
           </Canvas>
