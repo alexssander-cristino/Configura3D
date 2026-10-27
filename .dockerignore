@@ -1,0 +1,28 @@
+# Dependências instaladas no host Windows/Linux; serão instaladas dentro da imagem
+**/node_modules
+node_modules
+
+# Saídas locais de build e caches
+**/dist
+**/.vite
+**/coverage
+**/.turbo
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Controle de versão e arquivos locais
+.git
+.gitignore
+**/.DS_Store
+**/Thumbs.db
+
+# Segredos e configurações locais
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Dados locais que não devem ser enviados ao build
+**/data
+**/uploads
