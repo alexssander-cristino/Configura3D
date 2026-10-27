@@ -69,8 +69,20 @@ export default function Configurator() {
         });
         setSelections(defaults);
       } catch (err: any) {
-        setError('Não foi possível carregar o produto.');
-        console.error(err);
+        const status = err?.response?.status;
+        const apiMessage = err?.response?.data?.message;
+        setError(
+          status === 502
+            ? 'A API retornou 502 (gateway). Confira se o backend está rodando e se a conexão com o banco está ativa.'
+            : apiMessage || 'Não foi possível carregar o produto. Verifique a API e tente novamente.',
+        );
+        console.error('[Configura3D] Falha ao carregar produto:', {
+          status,
+          url: err?.config?.url,
+          baseURL: err?.config?.baseURL,
+          response: err?.response?.data,
+          error: err,
+        });
       } finally {
         setLoading(false);
       }
@@ -96,6 +108,24 @@ export default function Configurator() {
     });
     return map;
   }, [selections, optionGroups]);
+
+  if (!product) return (
+    <div className="flex min-h-screen items-center justify-center bg-[#f4f5fb] px-6">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+        <div className="text-base font-extrabold text-slate-900">
+          {error ? 'Não foi possível carregar o produto' : 'Carregando produto…'}
+        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          {error || 'Estamos buscando os dados do configurador.'}
+        </p>
+        {error && (
+          <Button onClick={() => window.location.reload()} variant="primary" className="mt-5 w-full">
+            Tentar novamente
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 
   const handleSave = async () => {
     if (!product) return;
@@ -140,12 +170,6 @@ export default function Configurator() {
       setQuoting(false);
     }
   };
-
-  if (!product) return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="text-slate-500">Carregando produto…</div>
-    </div>
-  );
 
   // URLs iniciadas com "/" apontam para o servidor do frontend, onde os
   // modelos públicos ficam em apps/web/public/models. URLs absolutas são preservadas.
