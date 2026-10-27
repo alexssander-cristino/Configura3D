@@ -12,8 +12,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://localhost:3333', changeOrigin: true },
-      '/docs': { target: 'http://localhost:3333', changeOrigin: true },
+      '/api': {
+        target: 'http://localhost:3334',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api/v1'),
+      },
+      '/docs': { target: 'http://localhost:3334', changeOrigin: true },
     },
   },
   build: {
