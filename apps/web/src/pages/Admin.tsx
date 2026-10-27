@@ -11,7 +11,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Box, ChevronRight, CirclePlus, LayoutDashboard, Package, ReceiptText, Settings2 } from 'lucide-react';
+import { Box, ChevronRight, LayoutDashboard, Package, ReceiptText } from 'lucide-react';
 import {
   listCompanies,
   listProducts,
