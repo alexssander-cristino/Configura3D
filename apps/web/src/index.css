@@ -318,3 +318,24 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 @media (prefers-reduced-motion: reduce) {
   .configurator-drawer, .configurator-mobile-sheet { animation:none !important; }
 }
+
+@media (max-width: 1023px) {
+  .configurator-stage > div[aria-label="Controles do visualizador 3D"] {
+    bottom: 148px !important;
+    left: 12px !important;
+    gap: 6px !important;
+  }
+  .configurator-stage > div[aria-label="Controles do visualizador 3D"] button {
+    width: 36px;
+    height: 36px;
+    border-color: #e3e6dc;
+    background: rgba(255,255,252,.94);
+    box-shadow: 0 4px 14px rgba(35,39,28,.06);
+  }
+  .configurator-stage > div[aria-label="Controles do visualizador 3D"] button[aria-label="Reiniciar visualização"] {
+    width: auto;
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+}
