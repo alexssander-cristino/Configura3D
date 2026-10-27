@@ -10,6 +10,7 @@ import { prisma } from './lib/prisma';
 import { authRoutes } from './modules/auth';
 import { companyRoutes } from './modules/companies';
 import { productRoutes } from './modules/products';
+import { publicConfiguratorRoutes } from './modules/public-configurator';
 import { modelRoutes } from './modules/models';
 import { optionRoutes } from './modules/options';
 import { compatibilityRoutes } from './modules/compatibility';
@@ -130,6 +131,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Rotas de negócio
   app.register(authRoutes, { prefix: '/api/v1' });
   app.register(companyRoutes, { prefix: '/api/v1' });
+  app.register(publicConfiguratorRoutes, { prefix: '/api/v1' });
   app.register(productRoutes, { prefix: '/api/v1' });
   app.register(modelRoutes, { prefix: '/api/v1' });
   app.register(optionRoutes, { prefix: '/api/v1' });
