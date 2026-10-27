@@ -26,6 +26,7 @@ export default function SharedConfig() {
   const [product, setProduct] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewerLoaded, setViewerLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -90,8 +91,8 @@ export default function SharedConfig() {
             <ViewerActionsProvider>
               <OrbitControls makeDefault enablePan={false} />
             </ViewerActionsProvider>
-            <ProductViewer modelUrl={modelUrl} componentMaterials={componentMaterials} />
-            <ViewerLoading />
+            <ProductViewer modelUrl={modelUrl} componentMaterials={componentMaterials} onLoad={() => setViewerLoaded(true)} onError={() => setViewerLoaded(true)} />
+            <ViewerLoading visible={!viewerLoaded} />
           </Canvas>
         </div>
         <div className="absolute bottom-4 left-4 flex gap-2">
