@@ -43,6 +43,7 @@ export default function Configurator() {
   } = useConfigStore();
 
   const [viewerError, setViewerError] = useState<unknown>(null);
+  const [viewerLoaded, setViewerLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [quoting, setQuoting] = useState(false);
 
@@ -158,6 +159,7 @@ export default function Configurator() {
   const handleViewerError = (err: unknown) => {
     console.error('[Configura3D] Erro ao carregar modelo 3D:', err);
     setViewerError(err);
+    setViewerLoaded(true);
   };
 
   return (
@@ -172,10 +174,11 @@ export default function Configurator() {
               <ProductViewer
                 modelUrl={modelUrl}
                 componentMaterials={componentMaterials}
+                onLoad={() => setViewerLoaded(true)}
                 onError={handleViewerError}
               />
             )}
-            <ViewerLoading />
+            <ViewerLoading visible={!viewerLoaded && !viewerError} />
           </Canvas>
         </div>
         <ViewerControls />
