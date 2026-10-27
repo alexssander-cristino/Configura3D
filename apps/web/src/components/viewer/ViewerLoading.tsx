@@ -1,7 +1,13 @@
 import { Html, useProgress } from '@react-three/drei';
 
-export function ViewerLoading() {
+interface ViewerLoadingProps {
+  visible?: boolean;
+}
+
+export function ViewerLoading({ visible = true }: ViewerLoadingProps) {
   const { progress } = useProgress();
+
+  if (!visible) return null;
 
   return (
     <Html center>
