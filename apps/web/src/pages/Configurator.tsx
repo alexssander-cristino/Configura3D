@@ -151,10 +151,10 @@ export default function Configurator() {
     ? `${window.location.origin}${rawModelUrl}`
     : rawModelUrl;
 
-  const handleViewerError = React.useCallback((err: unknown) => {
+  const handleViewerError = (err: unknown) => {
     console.error('[Configura3D] Erro ao carregar modelo 3D:', err);
     setViewerError(err);
-  }, []);
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
