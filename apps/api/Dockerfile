@@ -14,8 +14,7 @@ COPY . .
 RUN npm install \
     && npm run build --workspace=packages/shared \
     && npm run prisma:generate --workspace=apps/api \
-    && npm run build --workspace=apps/api \
-    && npm prune --omit=dev
+    && npm run build --workspace=apps/api
 
 EXPOSE 3334
 
