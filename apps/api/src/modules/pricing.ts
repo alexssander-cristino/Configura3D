@@ -6,6 +6,15 @@ import { logger } from '../lib/logger';
 import { calculatePrice } from '../lib/pricing';
 
 export const pricingRoutes: FastifyPluginAsyncZod = async (app) => {
+  const requireTenant = async (request: any, reply: any) => {
+    if (!request.tenant) {
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'Não autenticado',
+        code: 'not_authenticated',
+      });
+    }
+  };
   // POST /pricing/calculate é usado pelo configurador público e pela área autenticada.
   // Para visitantes, só permite produtos publicados, não arquivados e de empresa ativa.
   app.post(
@@ -72,16 +81,10 @@ export const pricingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  // Rotas administrativas de preços continuam exigindo autenticação.
-  app.addHook('preHandler', async (request: any, reply: any) => {
-    if (!request.tenant) {
-      return reply.status(401).send({ error: 'Unauthorized', message: 'Não autenticado', code: 'not_authenticated' });
-    }
-  });
-
   app.get(
     '/pricing/versions',
     {
+      preHandler: requireTenant,
       schema: {
         querystring: z.object({ active: z.enum(['true', 'false']).optional() }),
         response: { 200: z.array(z.any()) },
@@ -100,6 +103,7 @@ export const pricingRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/pricing/versions',
     {
+      preHandler: requireTenant,
       schema: {
         body: z.object({
           version: z.number().int().positive().default(1),
