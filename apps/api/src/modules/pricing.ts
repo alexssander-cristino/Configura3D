@@ -5,31 +5,47 @@ import { prisma } from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { calculatePrice } from '../lib/pricing';
 
-const requireAuth = (app: any) => {
-  app.addHook('preHandler', async (request: any, reply: any) => {
-    if (!request.tenant) {
-      return reply.status(401).send({ error: 'Unauthorized', message: 'Não autenticado', code: 'not_authenticated' });
-    }
-  });
-};
-
 export const pricingRoutes: FastifyPluginAsyncZod = async (app) => {
-  requireAuth(app);
-
-  // POST /pricing/calculate — calcular preço de uma configuração (fonte da verdade)
+  // POST /pricing/calculate é usado pelo configurador público e pela área autenticada.
+  // Para visitantes, só permite produtos publicados, não arquivados e de empresa ativa.
   app.post(
     '/pricing/calculate',
     {
       schema: {
         body: PriceCalculateInput,
-        response: { 200: PriceCalculateOutput, 400: z.any(), 403: z.any(), 404: z.any() },
+        response: { 200: PriceCalculateOutput, 400: z.any(), 401: z.any(), 403: z.any(), 404: z.any() },
         tags: ['Pricing'],
       },
     },
     async (request: any, reply) => {
-      const { companyId } = request.tenant;
       const { productId, quantity = 1, selections = {} } = request.body;
       try {
+        let companyId: string;
+
+        if (request.tenant?.companyId) {
+          companyId = request.tenant.companyId;
+        } else {
+          const publicProduct = await prisma.product.findFirst({
+            where: {
+              id: productId,
+              isPublished: true,
+              isArchived: false,
+              company: { isActive: true },
+            },
+            select: { companyId: true },
+          });
+
+          if (!publicProduct) {
+            return reply.status(404).send({
+              error: 'NotFound',
+              message: 'Produto publicado não encontrado',
+              code: 'public_product_not_found',
+            });
+          }
+
+          companyId = publicProduct.companyId;
+        }
+
         const price = await calculatePrice({ productId, quantity, selections }, companyId);
         return {
           basePriceCents: price.basePriceCents,
@@ -56,7 +72,13 @@ export const pricingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  // GET /pricing/versions — versões de preço da empresa
+  // Rotas administrativas de preços continuam exigindo autenticação.
+  app.addHook('preHandler', async (request: any, reply: any) => {
+    if (!request.tenant) {
+      return reply.status(401).send({ error: 'Unauthorized', message: 'Não autenticado', code: 'not_authenticated' });
+    }
+  });
+
   app.get(
     '/pricing/versions',
     {
@@ -75,7 +97,6 @@ export const pricingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  // POST /pricing/versions — criar nova versão de preço (snapshot)
   app.post(
     '/pricing/versions',
     {
@@ -97,7 +118,6 @@ export const pricingRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!['owner', 'admin'].includes(request.tenant.role)) {
         return reply.status(403).send({ error: 'Forbidden', message: 'Permissão insuficiente', code: 'insufficient_role' });
       }
-      // Se ativar, desativa as anteriores
       if (request.body.isActive) {
         await prisma.pricingVersion.updateMany({ where: { companyId }, data: { isActive: false } });
       }
