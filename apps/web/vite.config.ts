@@ -13,11 +13,13 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3334',
+        // Use IPv4 explicitly: on Windows, localhost may resolve to ::1
+        // while Fastify is listening on 0.0.0.0, causing proxy 502 errors.
+        target: 'http://127.0.0.1:3334',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api/v1'),
       },
-      '/docs': { target: 'http://localhost:3334', changeOrigin: true },
+      '/docs': { target: 'http://127.0.0.1:3334', changeOrigin: true },
     },
   },
   build: {
