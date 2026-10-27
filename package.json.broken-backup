@@ -1,0 +1,30 @@
+{
+  "name": "configura3d",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Configura3D - Plataforma profissional de configuração 3D de produtos e geração de orçamentos",
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "db:generate": "npx prisma generate --workspace=apps/api",
+    "db:push": "npx prisma db push --workspace=apps/api",
+    "db:migrate": "npx prisma migrate dev --workspace=apps/api",
+    "db:studio": "npx prisma studio --workspace=apps/api",
+    "test": "npx vitest run --workspace=apps/api --workspace=apps/web",
+    "lint": "npx eslint . --ext .ts,.tsx",
+    "format": "npx prettier --write ."
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "prettier": "^3.3.0",
+    "eslint": "^8.57.0"
+  },
+  "engine": {
+    "node": ">=20"
+  }
+}

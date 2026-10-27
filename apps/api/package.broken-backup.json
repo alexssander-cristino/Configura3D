@@ -1,0 +1,45 @@
+{
+  "name": "@configura3d/api",
+  "private": true,
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:deploy": "npx prisma migrate deploy",
+    "prisma:studio": "npx prisma studio",
+    "test": "npx vitest run"
+  },
+  "dependencies": {
+    "@fastify/awilix": "^8.3.2",
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/cors": "^9.0.0",
+    "@fastify/formbody": "^7.4.0",
+    "@fastify/jwt": "^10.2.5",
+    "@fastify/multipart": "^10.1.6",
+    "@fastify/swagger": "^8.14.0",
+    "@fastify/swagger-ui": "^6.1.2",
+    "@prisma/client": "^5.19.0",
+    "aws-sdk": "^1.18.0",
+    "bcryptjs": "^2.4.3",
+    "fastify": "^5.12.7",
+    "fastify-plugin": "^4.5.1",
+    "fastify-type-provider-zod": "^7.0.0",
+    "pino": "^8.21.0",
+    "pino-pretty": "^11.0.0",
+    "vite": "8.3.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.0.0",
+    "prisma": "^5.19.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^5.0.5"
+  }
+}

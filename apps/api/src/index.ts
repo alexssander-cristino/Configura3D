@@ -166,7 +166,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 if (require.main === module) {
   buildApp()
     .then((app) => {
-      const port = Number(process.env.PORT || 3333);
+      const port = Number(process.env.PORT || 3334);
       app.listen({ port, host: '0.0.0.0' }, (err: Error | null) => {
         if (err) {
           logger.error(err, 'Falha ao iniciar API');

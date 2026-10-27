@@ -1,9 +1,6 @@
-version: "3.8"
 
 services:
-  # ---------------------------------------------------------------------------
-  # Banco de dados primário PostgreSQL
-  # ---------------------------------------------------------------------------
+  # PostgreSQL
   db:
     image: postgres:16-alpine
     container_name: configura3d-db
@@ -21,38 +18,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
-  # ---------------------------------------------------------------------------
-  # Réplica opcional (descomente para habilitar leitura em réplica)
-  # ---------------------------------------------------------------------------
-  # db-replica:
-  #   image: postgres:16-alpine
-  #   container_name: configura3d-db-replica
-  #   restart: unless-stopped
-  #   environment:
-  #     POSTGRES_USER: configura3d
-  #     POSTGRES_PASSWORD: configura3d
-  #     POSTGRES_DB: configura3d
-  #     POSTGRES_MASTER_SERVICE: db
-  #     POSTGRES_REPLICATION_MODE: slave
-  #     POSTGRES_REPLICATION_USER: replicator
-  #     POSTGRES_REPLICATION_PASSWORD: replicator
-  #     POSTGRES_MASTER_PORT: 5432
-  #   ports:
-  #     - "5433:5432"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   volumes:
-  #     - configura3d_db_replica_data:/var/lib/postgresql/data
-
-  # ---------------------------------------------------------------------------
-  # Redis (cache, filas, processamento em segundo plano)
-  # ---------------------------------------------------------------------------
+  # Redis
   redis:
     image: redis:7-alpine
     container_name: configura3d-redis
     restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
     volumes:
@@ -63,31 +36,26 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------------------------------------------------------------------------
-  # MinIO (S3 compatível para armazenamento de modelos e imagens)
-  # ---------------------------------------------------------------------------
+  # Armazenamento de objetos S3 compatível com RustFS
   minio:
-    image: bitnami/minio:2024
+    image: rustfs/rustfs:latest
     container_name: configura3d-minio
     restart: unless-stopped
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-      MINIO_DEFAULT_BUCKETS: configura3d
+      RUSTFS_ACCESS_KEY: minioadmin
+      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:-configura3d_dev_secret_2026}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_OBS_LOGGER_LEVEL: info
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
       - configura3d_minio_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
+    command: ["/data"]
 
-  # ---------------------------------------------------------------------------
-  # API (Node.js + Fastify)
-  # ---------------------------------------------------------------------------
+  # API Fastify + Prisma
   api:
     build:
       context: ./apps/api
@@ -99,49 +67,54 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_started
     environment:
       NODE_ENV: production
-      PORT: 3333
-      DATABASE_URL: "postgresql://configura3d:configura3d@db:5432/configura3d?schema=public"
+      PORT: "3334"
+
+      DATABASE_URL: postgresql://configura3d:configura3d@db:5432/configura3d?schema=public
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-troque-por-um-segredo-forte-de-no-minimo-32-caracteres}
+
+      JWT_SECRET: ${JWT_SECRET:-troque-este-segredo-por-um-valor-forte-com-32-caracteres}
       JWT_EXPIRES_IN: 7d
-      BCRYPT_SALT_ROUNDS: 12
+      BCRYPT_SALT_ROUNDS: "12"
+
       CORS_ORIGINS: http://localhost:5173,http://localhost:3000
-      RATE_LIMIT_MAX: 100
-      RATE_LIMIT_TIME_WINDOW: 60000
+      RATE_LIMIT_MAX: "100"
+      RATE_LIMIT_TIME_WINDOW: "60000"
+
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1
       S3_BUCKET: configura3d
       S3_ACCESS_KEY_ID: minioadmin
-      S3_SECRET_ACCESS_KEY: minioadmin
-      S3_USE_SSL: false
-      PUBLIC_ASSETS_URL: http://localhost:3333/assets
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-configura3d_dev_secret_2026}
+      S3_USE_SSL: "false"
+      PUBLIC_ASSETS_URL: http://localhost:3334/assets
+
       LOG_LEVEL: info
     ports:
-      - "3333:3333"
+      - "3334:3334"
     command: ["sh", "-c", "npx prisma migrate deploy && npm run start"]
 
-  # ---------------------------------------------------------------------------
-  # Web (React + Vite) - servido via nginx em produção
-  # ---------------------------------------------------------------------------
+  # Frontend web
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      # A raiz é necessária para acessar os workspaces locais.
+      context: .
+      dockerfile: apps/web/Dockerfile
     container_name: configura3d-web
     restart: unless-stopped
     depends_on:
       api:
         condition: service_started
-    environment:
-      VITE_API_URL: http://localhost:3333
     ports:
       - "5173:80"
+    environment:
+      VITE_API_URL: http://localhost:3334
 
 volumes:
   configura3d_db_data:
-  configura3d_db_replica_data:
   configura3d_redis_data:
   configura3d_minio_data:
 
