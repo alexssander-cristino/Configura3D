@@ -10,6 +10,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Box, ChevronRight, CirclePlus, LayoutDashboard, Package, ReceiptText, Settings2 } from 'lucide-react';
 import {
   listCompanies,
   listProducts,
@@ -133,35 +135,25 @@ export default function Admin() {
   if (!company) return <div className="flex h-screen items-center justify-center text-slate-500">Nenhuma empresa encontrada.</div>;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="app-shell flex min-h-screen overflow-hidden">
       {/* Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 bg-white">
+      <aside className="hidden w-[260px] shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
         <div className="p-6">
           <div className="text-xl font-bold text-brand-900 mb-1">Configura3D</div>
           <div className="text-xs text-slate-500 mb-6">{company.name}</div>
           <nav className="space-y-1">
-            <a
-              href="#"
-              className="block px-4 py-2.5 rounded-lg bg-brand-900 text-white font-medium"
-              onClick={(e) => e.preventDefault()}
-            >
-              Catálogo
-            </a>
-            <a href="#" className="block px-4 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50" onClick={(e) => e.preventDefault()}>
-              Orçamentos
-            </a>
-            <a href="#" className="block px-4 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50" onClick={(e) => e.preventDefault()}>
-              Configurações
-            </a>
+            <Link to="/admin" className="flex items-center gap-3 rounded-xl bg-violet-50 px-4 py-3 font-bold text-violet-800"><Package size={17} /> Catálogo <ChevronRight size={15} className="ml-auto" /></Link>
+            <Link to="/quotes" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"><ReceiptText size={17} /> Orçamentos</Link>
+            <Link to="/configurator" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"><LayoutDashboard size={17} /> Configurador</Link>
           </nav>
         </div>
       </aside>
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <header className="flex items-center justify-between mb-6">
+      <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-9">
+        <header className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-xl font-bold text-brand-900">Catálogo de produtos</h1>
-            <p className="text-slate-500 text-sm">Gerencie produtos, opções de personalização e preços.</p>
+            <div className="eyebrow mb-2">GESTÃO DE PRODUTOS</div>\n            <h1 className="page-heading text-3xl sm:text-4xl">Catálogo de produtos</h1>
+            <p className="mt-2 text-sm text-slate-500">Gerencie produtos, opções de personalização e preços em um só lugar.</p>
           </div>
           <Button onClick={() => setShowCreate(true)} variant="primary">
             + Novo produto
