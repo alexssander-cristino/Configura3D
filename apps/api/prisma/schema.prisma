@@ -1,0 +1,419 @@
+// Configura3D - Esquema do banco de dados (PostgreSQL + Prisma)
+// Valores monetários são armazenados como inteiros (centavos) para evitar
+// erros de ponto flutuante.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Multiempresa (tenants)
+// ---------------------------------------------------------------------------
+
+model Company {
+  id          String   @id() @default(cuid()) @db.VarChar(255)
+  name        String   @db.VarChar(200)
+  slug        String   @unique @db.VarChar(100)
+  domain      String?  @unique @db.VarChar(200)
+  settings    Json     @default("{}")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users          CompanyMember[]
+  products       Product[]
+  quotes         Quote[]
+  configurations Configuration[]
+  modelAssets    ModelAsset[]
+  pricingVersions PricingVersion[]
+  storageAssets  StorageAsset[]
+  auditLogs      AuditLog[]
+  subscriptions  Subscription[]
+
+  @@index([slug])
+  @@index([domain])
+  @@index([isActive])
+}
+
+model User {
+  id         String   @id() @default(cuid()) @db.VarChar(255)
+  email      String   @unique @db.VarChar(200)
+  passwordHash String @db.VarChar(255)
+  name       String   @db.VarChar(200)
+  role       String   @default("editor") @db.VarChar(50)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members      CompanyMember[]
+  configurations Configuration[]
+  quoteEvents  QuoteEvent[]
+  auditLogs    AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+model CompanyMember {
+  id          String   @id() @default(cuid()) @db.VarChar(255)
+  companyId   String   @db.VarChar(255)
+  userId      String   @db.VarChar(255)
+  role        String   @default("editor") @db.VarChar(50)
+  permissions Json     @default("[]")
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([companyId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Catálogo de produtos e modelos 3D
+// ---------------------------------------------------------------------------
+
+model Product {
+  id               String         @id() @default(cuid()) @db.VarChar(255)
+  companyId        String         @db.VarChar(255)
+  name             String         @db.VarChar(200)
+  description      String?        @db.VarChar(1000)
+  slug             String         @db.VarChar(100)
+  category         String         @db.VarChar(100)
+  sku              String         @db.VarChar(100)
+  basePriceCents   Int            // centavos
+  productionTimeDays Int          @default(0)
+  modelAssetId     String?        @db.VarChar(255)
+  isPublished      Boolean        @default(false)
+  isArchived       Boolean        @default(false)
+  settings         Json           @default("{}")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  company        Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  modelAsset     ModelAsset?       @relation(fields: [modelAssetId], references: [id], onDelete: SetNull)
+  versions       ProductVersion[]
+  optionGroups   OptionGroup[]
+  configurations Configuration[]
+  quotes         Quote[]
+  compatibilityRules CompatibilityRule[]
+
+  @@unique([companyId, slug])
+  @@unique([companyId, sku])
+  @@index([companyId])
+  @@index([category])
+  @@index([isPublished])
+  @@index([isArchived])
+  @@index([slug])
+}
+
+model ProductVersion {
+  id        String   @id() @default(cuid()) @db.VarChar(255)
+  productId String   @db.VarChar(255)
+  version   Int      @default(1)
+  snapshot  Json     // snapshot completo do produto e opções
+  createdAt DateTime @default(now())
+
+  product       Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  configurations Configuration[]
+
+  @@index([productId])
+  @@index([productId, version])
+}
+
+model ModelAsset {
+  id               String   @id() @default(cuid()) @db.VarChar(255)
+  companyId        String   @db.VarChar(255)
+  name             String   @db.VarChar(200)
+  description      String?  @db.VarChar(1000)
+  fileUrl          String   @db.VarChar(2000)
+  thumbnailUrl     String?  @db.VarChar(2000)
+  mimeType         String   @db.VarChar(100)
+  sizeBytes        Int
+  processingStatus String   @default("pending") @db.VarChar(50) // pending|processing|ready|failed
+  errorMessage     String?  @db.VarChar(1000)
+  metadata         Json     @default("{}") // dimensões, componentes, escala
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products   Product[]
+  components ModelComponent[]
+
+  @@index([companyId])
+  @@index([processingStatus])
+}
+
+model ModelComponent {
+  id           String   @id() @default(cuid()) @db.VarChar(255)
+  modelAssetId String   @db.VarChar(255)
+  name         String   @db.VarChar(200) // nome amigável do componente
+  meshName     String   @db.VarChar(200) // nome do mesh no GLB
+  materialSlot String?  @db.VarChar(200) // slot de material (para PBR)
+  type         String   @db.VarChar(50) // color|material|finish|component|accessory
+  isConfigurable Boolean @default(true)
+  displayOrder Int      @default(0)
+
+  modelAsset ModelAsset @relation(fields: [modelAssetId], references: [id], onDelete: Cascade)
+
+  @@index([modelAssetId])
+  @@index([modelAssetId, displayOrder])
+}
+
+// ---------------------------------------------------------------------------
+// Opções de personalização
+// ---------------------------------------------------------------------------
+
+model OptionGroup {
+  id            String   @id() @default(cuid()) @db.VarChar(255)
+  productId     String   @db.VarChar(255)
+  name          String   @db.VarChar(200)
+  type          String   @db.VarChar(50) // color|material|finish|component|dimension|accessory|quantity|custom
+  isRequired    Boolean  @default(false)
+  minSelections Int      @default(1)
+  maxSelections Int      @default(1)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  options    ProductOption[]
+  items      ConfigurationItem[]
+
+  @@index([productId])
+  @@index([productId, displayOrder])
+}
+
+model ProductOption {
+  id                 String   @id() @default(cuid()) @db.VarChar(255)
+  optionGroupId      String   @db.VarChar(255)
+  name               String   @db.VarChar(200)
+  value              String   @db.VarChar(100)
+  priceAdditionalCents Int     @default(0) // centavos
+  skuSuffix          String?  @db.VarChar(50)
+  isAvailable        Boolean  @default(true)
+  isDiscontinued     Boolean  @default(false)
+  metadata           Json     @default("{}")
+  compatibilityRules Json     @default("[]") // regras de compatibilidade desta opção
+  displayOrder       Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  optionGroup OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  items       ConfigurationItem[]
+
+  @@index([optionGroupId])
+  @@index([optionGroupId, isAvailable])
+  @@index([isDiscontinued])
+}
+
+model CompatibilityRule {
+  id          String   @id() @default(cuid()) @db.VarChar(255)
+  productId   String   @db.VarChar(255)
+  name        String   @db.VarChar(200)
+  type        String   @db.VarChar(50) // incompatible|requires|limited_to
+  condition   Json     // condição que dispara a regra
+  action      Json     // ação (bloquear, exigir, limitar)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([productId, isActive])
+}
+
+// ---------------------------------------------------------------------------
+// Preços (versões de tabela de preços)
+// ---------------------------------------------------------------------------
+
+model PricingVersion {
+  id             String   @id() @default(cuid()) @db.VarChar(255)
+  companyId      String   @db.VarChar(255)
+  version        Int      @default(1)
+  effectiveFrom  DateTime @default(now())
+  taxRateCents   Int      @default(0) // taxa percentual armazenada em centavos (ex: 1000 = 10%)
+  discountRules  Json     @default("[]")
+  snapshot       Json     @default("{}") // snapshot da tabela de preços
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  configurations Configuration[]
+
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@index([effectiveFrom])
+}
+
+// ---------------------------------------------------------------------------
+// Configurações salvas e itens
+// ---------------------------------------------------------------------------
+
+model Configuration {
+  id               String   @id() @default(cuid()) @db.VarChar(255)
+  companyId        String   @db.VarChar(255)
+  productId        String   @db.VarChar(255)
+  productVersionId String?  @db.VarChar(255) // versão do produto no momento da gravação
+  userId           String?  @db.VarChar(255) // null = visitante/anônimo
+  shareToken       String   @unique @db.VarChar(255) // token público para link compartilhável
+  isPublic         Boolean  @default(false)
+  name             String?  @db.VarChar(200)
+  quantity         Int      @default(1)
+  selections       Json     @default("{}") // groupId -> optionIds[]
+  priceSnapshot    Json     @default("{}") // snapshot do preço calculado
+  pricingVersionId String?  @db.VarChar(255)
+  expiresAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product        Product        @relation(fields: [productId], references: [id])
+  productVersion ProductVersion? @relation(fields: [productVersionId], references: [id])
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  pricingVersion PricingVersion? @relation(fields: [pricingVersionId], references: [id])
+  items          ConfigurationItem[]
+  quotes         Quote[]
+
+  @@index([companyId])
+  @@index([productId])
+  @@index([shareToken])
+  @@index([isPublic])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ConfigurationItem {
+  id               String   @id() @default(cuid()) @db.VarChar(255)
+  configurationId  String   @db.VarChar(255)
+  optionGroupId    String   @db.VarChar(255)
+  productOptionId  String   @db.VarChar(255)
+  value            String   @db.VarChar(200) // valor da seleção (texto)
+  priceAdditionalCents Int   @default(0) // centavos
+
+  configuration Configuration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  optionGroup   OptionGroup   @relation(fields: [optionGroupId], references: [id])
+  productOption ProductOption @relation(fields: [productOptionId], references: [id])
+
+  @@index([configurationId])
+  @@index([configurationId, optionGroupId])
+}
+
+// ---------------------------------------------------------------------------
+// Orçamentos e oportunidades
+// ---------------------------------------------------------------------------
+
+model Quote {
+  id                String   @id() @default(cuid()) @db.VarChar(255)
+  companyId         String   @db.VarChar(255)
+  quoteNumber       String   @unique @db.VarChar(50)
+  configurationId   String?  @db.VarChar(255)
+  productId         String   @db.VarChar(255)
+  customerName      String   @db.VarChar(200)
+  customerEmail     String   @db.VarChar(200)
+  customerPhone     String?  @db.VarChar(50)
+  quantity          Int      @default(1)
+  notes             String?  @db.VarChar(1000)
+  estimatedValueCents Int     // centavos
+  status            String   @default("draft") @db.VarChar(50) // draft|sent|approved|rejected|expired
+  validUntil        DateTime?
+  pdfUrl            String?  @db.VarChar(2000)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  configuration Configuration? @relation(fields: [configurationId], references: [id], onDelete: SetNull)
+  product      Product      @relation(fields: [productId], references: [id])
+  events       QuoteEvent[]
+
+  @@index([companyId])
+  @@index([quoteNumber])
+  @@index([configurationId])
+  @@index([productId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuoteEvent {
+  id        String   @id() @default(cuid()) @db.VarChar(255)
+  quoteId   String   @db.VarChar(255)
+  type      String   @db.VarChar(100) // created|sent|approved|rejected|expired
+  fromStatus String? @db.VarChar(50)
+  toStatus  String   @db.VarChar(50)
+  userId    String?  @db.VarChar(255)
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([quoteId])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Armazenamento de objetos (modelos, imagens, PDFs)
+// ---------------------------------------------------------------------------
+
+model StorageAsset {
+  id        String   @id() @default(cuid()) @db.VarChar(255)
+  companyId String   @db.VarChar(255)
+  filename  String   @db.VarChar(500)
+  url       String   @db.VarChar(2000)
+  mimeType  String   @db.VarChar(100)
+  sizeBytes Int
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id() @default(cuid()) @db.VarChar(255)
+  companyId String?  @db.VarChar(255)
+  userId    String?  @db.VarChar(255)
+  action    String   @db.VarChar(100)
+  entityType String  @db.VarChar(100)
+  entityId  String?  @db.VarChar(255)
+  oldValues Json?    @default("{}")
+  newValues Json?    @default("{}")
+  createdAt DateTime @default(now())
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Assinaturas (planos SaaS - futuro)
+// ---------------------------------------------------------------------------
+
+model Subscription {
+  id               String   @id() @default(cuid()) @db.VarChar(255)
+  companyId        String   @unique @db.VarChar(255)
+  plan             String   @db.VarChar(100)
+  status           String   @db.VarChar(50)
+  currentPeriodEnd DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+}

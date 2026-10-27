@@ -1,0 +1,30 @@
+# Dependências
+node_modules/
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+apps/**/api.log
+
+# Docker volumes não versionados
+# (volumes são gerenciados pelo compose)
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
