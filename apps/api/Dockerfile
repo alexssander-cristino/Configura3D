@@ -1,22 +1,23 @@
 FROM node:22-alpine
 
-# Dependências nativas necessárias ao Prisma no Alpine.
+# Bibliotecas necessárias ao Prisma no Alpine Linux.
 RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 
-# A API usa o workspace compartilhado @configura3d/shared.
-# O contexto de build é a raiz do monorepo.
+# O contexto de build precisa ser a raiz do monorepo.
 COPY . .
 
-# Instala os workspaces, compila o pacote compartilhado e a API,
-# gera o cliente Prisma e remove dependências de desenvolvimento.
+# Gera primeiro o cliente Prisma. Sem isso, o TypeScript pode enxergar
+# tipos incompletos e falhar em consultas, transações e relações.
+# O pacote compartilhado também precisa ser compilado antes da API.
 RUN npm install \
     && npm run build --workspace=packages/shared \
+    && npm run prisma:generate --workspace=apps/api \
     && npm run build --workspace=apps/api \
-    && npx prisma generate --workspace=apps/api \
     && npm prune --omit=dev
 
 EXPOSE 3334
 
-CMD ["sh", "-c", "npx prisma migrate deploy --workspace=apps/api && npm run start --workspace=apps/api"]
+# Executa as migrações antes de iniciar o servidor.
+CMD ["sh", "-c", "npm run prisma:deploy --workspace=apps/api && npm run start --workspace=apps/api"]
