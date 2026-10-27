@@ -58,8 +58,8 @@ services:
   # API Fastify + Prisma
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: configura3d-api
     restart: unless-stopped
     depends_on:
