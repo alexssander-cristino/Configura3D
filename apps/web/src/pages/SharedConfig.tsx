@@ -76,11 +76,15 @@ export default function SharedConfig() {
     </div>
   );
 
-  const modelUrl = product?.modelAsset?.fileUrl || '/models/demo-organizador.glb';
+  const configuredModelUrl = product?.modelAsset?.fileUrl || '/models/demo-organizador.gltf';
+  const rawModelUrl = configuredModelUrl.endsWith('/demo-organizador.glb')
+    ? configuredModelUrl.replace(/demo-organizador\.glb$/, 'demo-organizador.gltf')
+    : configuredModelUrl;
+  const modelUrl = rawModelUrl.startsWith('/') ? window.location.origin + rawModelUrl : rawModelUrl;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      <div className="flex-1 relative bg-white">
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#f4f5fb] lg:h-screen lg:flex-row">
+      <section className="relative min-h-[62vh] min-w-0 flex-1 bg-[#f4f5fb] lg:min-h-0">
         <div className="absolute inset-0 z-0">
           <Canvas>
             <ViewerActionsProvider>
@@ -96,7 +100,7 @@ export default function SharedConfig() {
           </a>
         </div>
       </div>
-      <div className="w-[420px] border-l border-slate-200 bg-white p-6 overflow-y-auto">
+      <aside className="w-full shrink-0 overflow-y-auto border-t border-slate-200 bg-white p-5 sm:p-6 lg:w-[390px] lg:border-l lg:border-t-0 xl:w-[420px]">
         <h2 className="text-sm font-semibold text-slate-700 mb-1">Configuração compartilhada</h2>
         <p className="text-xs text-slate-500 mb-4">{product?.name || 'Produto'}</p>
         <div className="space-y-3 text-sm mb-6">
@@ -112,7 +116,7 @@ export default function SharedConfig() {
         <p className="text-[11px] text-slate-400">
           Visualização pública. Os preços foram registrados no orçamento vinculado.
         </p>
-      </div>
-    </div>
+      </aside>
+    </main>
   );
 }
